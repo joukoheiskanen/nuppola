@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Joulukalenterin luukku – Karttahaku</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.css" />
+  <style>
+    :root { --container-max: 900px; --gap: 16px; }
+    body { margin: 0; padding: var(--gap); background: #f7f7f7; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; display: flex; justify-content: center; }
+    .container { width: 100%; max-width: var(--container-max); background: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); padding: calc(var(--gap) * 1.25); }
+    h1 { margin: 0 0 8px 0; font-size: clamp(20px, 2.4vw, 28px); }
+    .subtle { color:#666; margin-bottom: 16px; }
+
+    /* Image section */
+    .image-section { margin: 16px 0; }
+    .image-wrap { position: relative; max-height: 550px; overflow: hidden; border-radius: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); }
+    .image-wrap img { width: 100%; height: auto; max-height: 550px; object-fit: contain; display: block; background: #000; }
+
+    /* Icon-style fullscreen toggle (mirrors Leaflet control aesthetics) */
+    .img-fs-control {
+      position: absolute; right: 12px; top: 12px; z-index: 1000;
+      width: 34px; height: 34px; border-radius: 4px; background: #fff; border: 1px solid #cfd8dc;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2); cursor: pointer; display: grid; place-items: center;
+    }
+    .img-fs-control:hover { background:#f0f0f0; }
+    .img-fs-icon {
+      width: 18px; height: 18px; position: relative;
+    }
+    /* simple expand icon: corners */
+    .img-fs-icon::before, .img-fs-icon::after {
+      content:""; position: absolute; border: 2px solid #333; width: 8px; height: 8px;
+    }
+    .img-fs-icon::before { left: 0; top: 0; border-right: none; border-bottom: none; }
+    .img-fs-icon::after { right: 0; bottom: 0; border-left: none; border-top: none; }
+
+    /* Fullscreen image sizing */
+    :fullscreen .image-fullscreen-target { width: 100vw; height: 100vh; object-fit: contain; background: #000; }
+    :-webkit-full-screen .image-fullscreen-target { width: 100vw; height: 100vh; object-fit: contain; background: #000; }
+
+    /* Global back icon appears in fullscreen */
+    .fs-back-fixed {
+      position: fixed; left: 12px; top: 12px; width: 34px; height: 34px; border-radius: 4px;
+      background: #fff; border: 1px solid #cfd8dc; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      display: none; z-index: 2147483647; cursor: pointer; display: grid; place-items: center;
+    }
+    .fs-back-fixed:hover { background:#f0f0f0; }
+    .img-exit-icon {
+      width: 18px; height: 18px; position: relative;
+    }
+    /* collapse icon: inward corners */
+    .img-exit-icon::before, .img-exit-icon::after {
+      content:""; position: absolute; border: 2px solid #333; width: 8px; height: 8px;
+    }
+    .img-exit-icon::before { left: 2px; top: 2px; border-left: none; border-top: none; transform: rotate(180deg); }
+    .img-exit-icon::after { right: 2px; bottom: 2px; border-right: none; border-bottom: none; transform: rotate(180deg); }
+
+    /* Form fields */
+    .form-field { margin-bottom: 16px; }
+    label { font-weight: 600; display: block; margin-bottom: 6px; }
+    select, input[type="number"] { width: 100%; padding: 8px 10px; border: 1px solid #cfd8dc; border-radius: 8px; box-sizing: border-box; }
+
+    /* Map and overlay search */
+    #map { position: relative; height: 550px; width: 100%; margin-top: 10px; }
+    .map-search { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; align-items: center; background: #fff; border: 1px solid #cfd8dc; border-radius: 10px; padding: 10px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); z-index: 1000; width: 70%; max-width: 760px; }
+    .map-search input[type="text"] { flex: 1 1 auto; min-width: 300px; padding: 10px 12px; border: 1px solid #cfd8dc; border-radius: 8px; font-size: 16px; }
+    .map-search button { padding: 10px 14px; border: none; background: #0078D4; color: #fff; border-radius: 8px; cursor: pointer; font-size: 16px; }
+    .map-search button:hover { background:#005ea6; }
+
+    #msg { font-size: 14px; color:#444; min-height: 20px; margin-top: 6px; }
+    #coords { font-size: 14px; color:#333; white-space: pre-line; }
+    #coords b { font-weight: 700; }
+
+    .submit-btn { margin-top: 20px; padding: 12px 18px; font-size: 16px; background: #0078D4; color:#fff; border:none; border-radius:8px; cursor:pointer; }
+    .submit-btn:hover { background:#005ea6; }
+
+    @media (max-width: 640px) {
+      .map-search { width: calc(100% - 24px); left: 12px; transform: none; }
+      .map-search input[type="text"] { min-width: 0; width: 100%; }
+      .map-search button { flex: 0 0 auto; }
+    }
+  </style>
+</head>
+<body>
+  <!-- global back icon for fullscreen -->
+  <button class="fs-back-fixed" id="fsBackBtn" type="button" aria-label="Poistu koko ruudusta"><span class="img-exit-icon" aria-hidden="true"></span></button>
+  <div class="container">
+    <h1>Joulukalenterin luukku</h1>
+    <p class="subtle">Katso päivän kuva, valitse nimesi, arvaa vuosi ja kuvauspaikka kartalla. Hakukenttä näkyy myös koko näytön kartassa.</p>
+
+    <!-- Nimi dropdown -->
+    <div class="form-field">
+      <label for="nimi">Nimi</label>
+      <select name="nimi" id="nimi">
+  <option value="">&lt; Valitse &gt;</option>
+  <option value="Antti">Antti</option>
+  <option value="Hanna">Hanna</option>
+  <option value="Hannu">Hannu</option>
+  <option value="Henri">Henri</option>
+  <option value="Heta">Heta</option>
+  <option value="Ilkka">Ilkka</option>
+  <option value="Jouko">Jouko</option>
+  <option value="Kari">Kari</option>
+  <option value="Kati">Kati</option>
+  <option value="Katri">Katri</option>
+  <option value="Liisa">Liisa</option>
+  <option value="Leena K">Leena K</option>
+  <option value="Leena S">Leena S</option>
+  <option value="Maaria">Maaria</option>
+  <option value="Marika">Marika</option>
+  <option value="Matti">Matti</option>
+  <option value="Outi">Outi</option>
+  <option value="Paula">Paula</option>
+  <option value="Silja">Silja</option>
+  <option value="Tapio">Tapio</option>
+  <option value="Tarja">Tarja</option>
+  <option value="Timo">Timo</option>
+  <option value="Tommi">Tommi</option>
+</select>
+    </div>
+
+    <!-- Image section with icon toggle -->
+    <div class="image-section">
+      <div class="image-wrap" id="imageWrap">
+        <img src="luukku-1.jpg" alt="Päivän kuva" id="imageEl" class="image-fullscreen-target" />
+        <button class="img-fs-control" id="imgFsControl" type="button" aria-label="Näytä koko ruudussa"><span class="img-fs-icon" aria-hidden="true"></span></button>
+      </div>
+    </div>
+
+    <!-- Vuosi field -->
+    <div class="form-field">
+      <label for="vuosi">Miltä vuodelta kuva on?</label>
+      <input id="vuosi" name="vuosi" type="number" inputmode="numeric" placeholder="Esim. 1998" />
+    </div>
+
+    <!-- Missä kuva on otettu? -->
+    <div class="form-field">
+      <label>Missä kuva on otettu?</label>
+      <div id="map">
+        <div class="map-search" id="mapSearch">
+          <input id="address" type="text" placeholder="Hae osoitetta tai klikkaa karttaa" aria-label="Osoitehaku" />
+          <button id="searchBtn" type="button">Hae</button>
+        </div>
+      </div>
+      <div id="msg"></div>
+      <div id="coords">Valitut koordinaatit: –</div>
+    </div>
+
+    <!-- Submit button -->
+    <button class="submit-btn" id="submitBtn" type="button">Lähetä</button>
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.js"></script>
+  <script>
+    // Image fullscreen toggle with icon control + global back icon
+    const imageEl = document.getElementById('imageEl');
+    const imgFsControl = document.getElementById('imgFsControl');
+    const fsBackBtn = document.getElementById('fsBackBtn');
+
+    async function enterImageFullscreen() {
+      try {
+        if (imageEl.requestFullscreen) {
+          await imageEl.requestFullscreen();
+        } else if (imageEl.webkitRequestFullscreen) {
+          imageEl.webkitRequestFullscreen();
+        }
+      } catch (e) { console.error('Fullscreen error:', e); }
+    }
+    async function exitFullscreen() {
+      try {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      } catch (e) { console.error('Exit fullscreen error:', e); }
+    }
+
+    imgFsControl.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        enterImageFullscreen();
+      } else {
+        exitFullscreen();
+      }
+    });
+    fsBackBtn.addEventListener('click', exitFullscreen);
+
+    document.addEventListener('fullscreenchange', () => {
+      const inFs = !!document.fullscreenElement;
+      // swap icon title
+      imgFsControl.setAttribute('aria-label', inFs ? 'Poistu koko ruudusta' : 'Näytä koko ruudussa');
+      fsBackBtn.style.display = inFs ? 'inline-grid' : 'none';
+    });
+
+    // Map init
+    const DEFAULT = { lat: 60.1699, lon: 24.9384, zoom: 12 };
+    const map = L.map('map', { fullscreenControl: true, fullscreenControlOptions: { position: 'topleft' } }).setView([DEFAULT.lat, DEFAULT.lon], DEFAULT.zoom);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap contributors' }).addTo(map);
+
+    let marker = null;
+    const addressInput = document.getElementById('address');
+    const searchBtn = document.getElementById('searchBtn');
+    const msg = document.getElementById('msg');
+    const coordsEl = document.getElementById('coords');
+
+    function showMessage(text, isError=false) { msg.textContent = text || ''; msg.style.color = isError ? '#b00020' : '#444'; }
+
+    function updateCoords(lat, lon) {
+      const fLat = Number(lat).toFixed(6);
+      const fLon = Number(lon).toFixed(6);
+      const addr = addressInput.value ? `\n(${addressInput.value})` : '';
+      coordsEl.innerHTML = `Valitut koordinaatit: <b>${fLat}</b>, <b>${fLon}</b>${addr}`;
+    }
+
+    function setMarker(lat, lon) {
+      if (marker) { map.removeLayer(marker); }
+      marker = L.marker([lat, lon]).addTo(map);
+      updateCoords(lat, lon);
+    }
+
+    async function searchAddress() {
+      const q = addressInput.value.trim();
+      if (!q) { showMessage('Kirjoita osoite hakukenttään.'); return; }
+      showMessage('Haetaan osoitetta…');
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&accept-language=fi&q=${encodeURIComponent(q)}`;
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) { showMessage('Osoitetta ei löytynyt', true); return; }
+        const lat = parseFloat(data[0].lat), lon = parseFloat(data[0].lon);
+        setMarker(lat, lon); map.setView([lat, lon], 15); showMessage('');
+      } catch (e) { console.error(e); showMessage('Haussa tapahtui virhe.', true); }
+    }
+
+    async function reverseGeocode(lat, lon) {
+      showMessage('Haetaan osoitetta…');
+      try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&accept-language=fi&lat=${lat}&lon=${lon}`;
+        const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        const data = await res.json();
+        if (data && data.display_name) { addressInput.value = data.display_name; showMessage(''); }
+        else { showMessage('Osoitetta ei voitu tulkita', true); }
+      } catch (e) { console.error(e); showMessage('Osoitteen haussa tapahtui virhe.', true); }
+      finally {
+        updateCoords(lat, lon);
+      }
+    }
+
+    map.on('click', (e) => {
+      const { lat, lng } = e.latlng;
+      setMarker(lat, lng); map.setView([lat, lng], Math.max(map.getZoom(), 15)); reverseGeocode(lat, lng);
+    });
+
+    const overlay = document.getElementById('mapSearch'); if (overlay) { L.DomEvent.disableClickPropagation(overlay); }
+    searchBtn.addEventListener('click', searchAddress);
+    addressInput.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); searchAddress(); } });
+
+    // Placeholder for Google Forms submission
+    document.getElementById('submitBtn').addEventListener('click', () => {
+      alert('Tiedot lähetetään Google Forms -lomakkeelle (integrointi lisätään myöhemmin).');
+    });
+  </script>
+</body>
+</html>
