@@ -1,12 +1,13 @@
 <!DOCTYPE html>
+
 <html lang="fi">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Joulukalenterin luukku – Karttahaku</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.css" />
-  <style>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<title>Joulukalenterin luukku – Karttahaku</title>
+<link href="https://unpkg.com/leaflet/dist/leaflet.css" rel="stylesheet"/>
+<link href="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.css" rel="stylesheet"/>
+<style>
     :root { --container-max: 900px; --gap: 16px; }
     body { margin: 0; padding: var(--gap); background: #f7f7f7; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; display: flex; justify-content: center; }
     .container { width: 100%; max-width: var(--container-max); background: #fff; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); padding: calc(var(--gap) * 1.25); }
@@ -82,78 +83,72 @@
     }
   </style>
 </head>
-<body>
-  <!-- global back icon for fullscreen -->
-  <button class="fs-back-fixed" id="fsBackBtn" type="button" aria-label="Poistu koko ruudusta"><span class="img-exit-icon" aria-hidden="true"></span></button>
-  <div class="container">
-    <h1>Joulukalenterin luukku</h1>
-    <p class="subtle">Katso päivän kuva, valitse nimesi, arvaa vuosi ja kuvauspaikka kartalla. Hakukenttä näkyy myös koko näytön kartassa.</p>
-
-    <!-- Nimi dropdown -->
-    <div class="form-field">
-      <label for="nimi">Nimi</label>
-      <select name="entry.2055534351" id="nimi">
-  <option value="">&lt; Valitse &gt;</option>
-  <option value="Antti">Antti</option>
-  <option value="Hanna">Hanna</option>
-  <option value="Hannu">Hannu</option>
-  <option value="Henri">Henri</option>
-  <option value="Heta">Heta</option>
-  <option value="Ilkka">Ilkka</option>
-  <option value="Jouko">Jouko</option>
-  <option value="Kari">Kari</option>
-  <option value="Kati">Kati</option>
-  <option value="Katri">Katri</option>
-  <option value="Liisa">Liisa</option>
-  <option value="Leena K">Leena K</option>
-  <option value="Leena S">Leena S</option>
-  <option value="Maaria">Maaria</option>
-  <option value="Marika">Marika</option>
-  <option value="Matti">Matti</option>
-  <option value="Outi">Outi</option>
-  <option value="Paula">Paula</option>
-  <option value="Silja">Silja</option>
-  <option value="Tapio">Tapio</option>
-  <option value="Tarja">Tarja</option>
-  <option value="Timo">Timo</option>
-  <option value="Tommi">Tommi</option>
+<body><form action="https://docs.google.com/forms/d/e/1FAIpQLSciOtcKBPkjOpfKAXk8q9VVs3R8ELNtzROSfxRU9K0bTkTtyQ/formResponse" method="POST" target="_blank">
+<!-- global back icon for fullscreen -->
+<button aria-label="Poistu koko ruudusta" class="fs-back-fixed" id="fsBackBtn" type="button"><span aria-hidden="true" class="img-exit-icon"></span></button>
+<div class="container">
+<h1>Joulukalenterin luukku</h1>
+<p class="subtle">Katso päivän kuva, valitse nimesi, arvaa vuosi ja kuvauspaikka kartalla. Hakukenttä näkyy myös koko näytön kartassa.</p>
+<!-- Nimi dropdown -->
+<div class="form-field">
+<label for="nimi">Nimi</label>
+<select id="nimi" name="entry.2055534351">
+<option value="">&lt; Valitse &gt;</option>
+<option value="Antti">Antti</option>
+<option value="Hanna">Hanna</option>
+<option value="Hannu">Hannu</option>
+<option value="Henri">Henri</option>
+<option value="Heta">Heta</option>
+<option value="Ilkka">Ilkka</option>
+<option value="Jouko">Jouko</option>
+<option value="Kari">Kari</option>
+<option value="Kati">Kati</option>
+<option value="Katri">Katri</option>
+<option value="Liisa">Liisa</option>
+<option value="Leena K">Leena K</option>
+<option value="Leena S">Leena S</option>
+<option value="Maaria">Maaria</option>
+<option value="Marika">Marika</option>
+<option value="Matti">Matti</option>
+<option value="Outi">Outi</option>
+<option value="Paula">Paula</option>
+<option value="Silja">Silja</option>
+<option value="Tapio">Tapio</option>
+<option value="Tarja">Tarja</option>
+<option value="Timo">Timo</option>
+<option value="Tommi">Tommi</option>
 </select>
-    </div>
-
-    <!-- Image section with icon toggle -->
-    <div class="image-section">
-      <div class="image-wrap" id="imageWrap">
-        <img src="luukku-1.jpg" alt="Päivän kuva" id="imageEl" class="image-fullscreen-target" />
-        <button class="img-fs-control" id="imgFsControl" type="button" aria-label="Näytä koko ruudussa"><span class="img-fs-icon" aria-hidden="true"></span></button>
-      </div>
-    </div>
-
-    <!-- Vuosi field -->
-    <div class="form-field">
-      <label for="vuosi">Miltä vuodelta kuva on?</label>
-      <input id="vuosi" name="entry.1893246520" type="number" inputmode="numeric" placeholder="Esim. 1998" />
-    </div>
-
-    <!-- Missä kuva on otettu? -->
-    <div class="form-field">
-      <label>Missä kuva on otettu?</label>
-      <div id="map">
-        <div class="map-search" id="mapSearch">
-          <input id="address" name="entry.1692433013" type="text" placeholder="Hae osoitetta tai klikkaa karttaa" aria-label="Osoitehaku" />
-          <button id="searchBtn" type="button">Hae</button>
-        </div>
-      </div>
-      <div id="msg"></div>
-      <div id="coords">Valitut koordinaatit: –</div>
-    </div>
-
-    <!-- Submit button -->
-    <button class="submit-btn" id="submitBtn" type="button">Lähetä</button>
-  </div>
-
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.js"></script>
-  <script>
+</div>
+<!-- Image section with icon toggle -->
+<div class="image-section">
+<div class="image-wrap" id="imageWrap">
+<img alt="Päivän kuva" class="image-fullscreen-target" id="imageEl" src="luukku-1.jpg"/>
+<button aria-label="Näytä koko ruudussa" class="img-fs-control" id="imgFsControl" type="button"><span aria-hidden="true" class="img-fs-icon"></span></button>
+</div>
+</div>
+<!-- Vuosi field -->
+<div class="form-field">
+<label for="vuosi">Miltä vuodelta kuva on?</label>
+<input id="vuosi" inputmode="numeric" name="vuosi" placeholder="Esim. 1998" type="number"/>
+</div>
+<!-- Missä kuva on otettu? -->
+<div class="form-field">
+<label>Missä kuva on otettu?</label>
+<div id="map">
+<div class="map-search" id="mapSearch">
+<input aria-label="Osoitehaku" id="address" placeholder="Hae osoitetta tai klikkaa karttaa" type="text"/>
+<button id="searchBtn" type="button">Hae</button>
+</div>
+</div>
+<div id="msg"></div>
+<div id="coords">Valitut koordinaatit: –</div>
+</div>
+<!-- Submit button -->
+<button class="submit-btn" id="submitBtn" type="button">Lähetä</button>
+</div>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.fullscreen/Control.FullScreen.js"></script>
+<script>
     // Image fullscreen toggle with icon control + global back icon
     const imageEl = document.getElementById('imageEl');
     const imgFsControl = document.getElementById('imgFsControl');
@@ -262,5 +257,5 @@
       alert('Tiedot lähetetään Google Forms -lomakkeelle (integrointi lisätään myöhemmin).');
     });
   </script>
-</body>
+</form></body>
 </html>
